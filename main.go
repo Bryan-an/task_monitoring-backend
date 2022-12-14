@@ -2,45 +2,65 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"net/http"
 	"os"
-	"time"
 
+	"github.com/Bryan-an/tasker-backend/pkg/auth"
+	"github.com/Bryan-an/tasker-backend/pkg/common/db"
+	"github.com/Bryan-an/tasker-backend/pkg/settings"
+	"github.com/Bryan-an/tasker-backend/pkg/tasks"
+	"github.com/Bryan-an/tasker-backend/pkg/users"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+var database *mongo.Database
 
 func main() {
 	err := godotenv.Load()
 
 	if err != nil {
 		log.Fatal("Error laading .env file")
+		return
 	}
 
-	mongoURI := os.Getenv("MONGO_URI")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+	client := db.Connect()
+	DbName := os.Getenv("DB_NAME")
+	database = client.Database(DbName)
 
 	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
+		if err = client.Disconnect(context.TODO()); err != nil {
 			panic(err)
 		}
 	}()
 
-	databases, err := client.ListDatabaseNames(ctx, bson.M{})
+	router := setupRouter()
+	var port string
 
-	if err != nil {
-		log.Fatal(err)
+	if port = os.Getenv("PORT"); port == "" {
+		port = ":8080"
 	}
 
-	fmt.Println(databases)
+	router.Run(port)
 }
 
-func SayHello(name string) string {
-	return fmt.Sprintf("Hello %v!", name)
+func setupRouter() *gin.Engine {
+	router := gin.Default()
+
+	router.Use(cors.Default())
+	router.SetTrustedProxies(nil)
+
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(http.StatusOK, "pong")
+	})
+
+	auth.RegisterRoutes(router, database)
+	settings.RegisterRoutes(router, database)
+	tasks.RegisterRoutes(router, database)
+	users.RegisterRoutes(router, database)
+
+	return router
 }
