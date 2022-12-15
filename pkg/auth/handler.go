@@ -17,5 +17,4 @@ func RegisterRoutes(r *gin.Engine, db *mongo.Database) {
 	routes := r.Group("/api/v1/auth")
 	routes.POST("register", h.Register)
 	routes.POST("login", h.Login)
-
 }

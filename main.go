@@ -8,6 +8,7 @@ import (
 
 	"github.com/Bryan-an/tasker-backend/pkg/auth"
 	"github.com/Bryan-an/tasker-backend/pkg/common/db"
+	"github.com/Bryan-an/tasker-backend/pkg/common/middlewares"
 	"github.com/Bryan-an/tasker-backend/pkg/settings"
 	"github.com/Bryan-an/tasker-backend/pkg/tasks"
 	"github.com/Bryan-an/tasker-backend/pkg/users"
@@ -51,6 +52,7 @@ func setupRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.Default())
+	router.Use(middlewares.ErrorHandler())
 	router.SetTrustedProxies(nil)
 
 	router.GET("/ping", func(c *gin.Context) {

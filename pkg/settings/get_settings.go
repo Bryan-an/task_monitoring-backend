@@ -3,7 +3,6 @@ package settings
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
@@ -17,8 +16,8 @@ func (h handler) GetSettings(c *gin.Context) {
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
@@ -31,11 +30,12 @@ func (h handler) GetSettings(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 				"error": fmt.Sprintf("settings not found for user with id '%s'", uid),
 			})
+
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 

@@ -21,7 +21,6 @@ func RegisterRoutes(r *gin.Engine, db *mongo.Database) {
 	routes.GET("/", h.GetTasks)
 	routes.POST("/", h.AddTask)
 	routes.GET("/:id", h.GetTask)
-	routes.PATCH("/:id", h.UpdateTask)
-	routes.PUT("/:id", h.ReplaceTask)
+	routes.PUT("/:id", h.UpdateTask)
 	routes.DELETE("/:id", h.DeleteTask)
 }

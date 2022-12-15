@@ -3,7 +3,6 @@ package settings
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
@@ -18,7 +17,7 @@ type Notification struct {
 	Mobile bool `json:"mobile"`
 }
 
-type SettingsInput struct {
+type AddInput struct {
 	Notifications Notification `json:"notifications" binding:"required"`
 	Security      string       `json:"security" binding:"required"`
 	Theme         string       `json:"theme" binding:"required,oneof=dark light"`
@@ -28,29 +27,22 @@ func (h handler) AddSettings(c *gin.Context) {
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
-	var input SettingsInput
+	var input AddInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
 
 		if errors.As(err, &ve) {
-			out := make([]utils.ErrorMsg, len(ve))
-
-			for i, fe := range ve {
-				out[i] = utils.ErrorMsg{
-					Field:   fe.Field(),
-					Message: utils.GetErrorMsg(fe),
-				}
-			}
+			out := utils.FillErrors(ve)
 
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusBadRequest, err)
 		}
 
 		return
@@ -72,14 +64,12 @@ func (h handler) AddSettings(c *gin.Context) {
 	req, err := settingsCollection.InsertOne(context.TODO(), s)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"error": "error registering settings",
-		})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"message": "settings added",
 		"id":      req.InsertedID,
 	})

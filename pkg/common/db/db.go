@@ -17,6 +17,7 @@ func Connect() *mongo.Client {
 
 	if err != nil {
 		log.Fatal("Error connecting database")
+
 		return nil
 	}
 
@@ -32,6 +33,7 @@ func Connect() *mongo.Client {
 
 	if err != nil {
 		log.Fatal(err)
+
 		return nil
 	}
 

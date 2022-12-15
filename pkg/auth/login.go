@@ -3,8 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
@@ -28,18 +26,11 @@ func (h handler) Login(c *gin.Context) {
 		var ve validator.ValidationErrors
 
 		if errors.As(err, &ve) {
-			out := make([]utils.ErrorMsg, len(ve))
-
-			for i, fe := range ve {
-				out[i] = utils.ErrorMsg{
-					Field:   fe.Field(),
-					Message: utils.GetErrorMsg(fe),
-				}
-			}
+			out := utils.FillErrors(ve)
 
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.AbortWithError(http.StatusBadRequest, err)
 		}
 
 		return
@@ -48,35 +39,34 @@ func (h handler) Login(c *gin.Context) {
 	usersCollection := h.DB.Collection("users")
 	filter := bson.D{{Key: "email", Value: input.Email}}
 	var u models.User
-	err := usersCollection.FindOne(context.TODO(), filter).Decode(&u)
 
-	if err != nil {
+	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&u); err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-				"error": fmt.Sprintf("user not found with email '%s'", input.Email),
+				"error": "user or password incorrect",
 			})
+
 			return
 		}
 
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
-	correct := verifyPassword(input.Password, u.Password)
-
-	if !correct {
+	if correct := verifyPassword(input.Password, u.Password); !correct {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error": "user or password incorrect",
 		})
+
 		return
 	}
 
 	token, err := utils.GenerateToken(u.Id.Hex())
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
@@ -85,5 +75,6 @@ func (h handler) Login(c *gin.Context) {
 
 func verifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+
 	return err == nil
 }

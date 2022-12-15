@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
@@ -15,25 +14,30 @@ func (h handler) GetTasks(c *gin.Context) {
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
 	taskCollection := h.DB.Collection("tasks")
 	var tasks []models.Task
-	filter := bson.D{{Key: "user_id", Value: uid}}
+
+	filter := bson.D{
+		{Key: "user_id", Value: uid},
+		{Key: "status", Value: "created"},
+	}
+
 	cursor, err := taskCollection.Find(context.TODO(), filter)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
 	if err = cursor.All(context.TODO(), &tasks); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		log.Fatal(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
 		return
 	}
 
