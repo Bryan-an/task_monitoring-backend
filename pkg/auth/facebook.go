@@ -20,8 +20,8 @@ import (
 
 func GetFacebookOAuthConfig() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     os.Getenv("CLIENT_ID"),
-		ClientSecret: os.Getenv("CLIENT_SECRET"),
+		ClientID:     os.Getenv("FACEBOOK_CLIENT_ID"),
+		ClientSecret: os.Getenv("FACEBOOK_CLIENT_SECRET"),
 		RedirectURL:  os.Getenv("FACEBOOK_REDIRECT_URL"),
 		Endpoint:     facebookOAuth.Endpoint,
 		Scopes:       []string{"email"},
@@ -32,8 +32,8 @@ func GetRandomOAuthStateString() string {
 	return os.Getenv("OAUTH_STATE_STRING")
 }
 
-func GetUserInfoFromFacebook(token string) (models.FacebookUserDetails, error) {
-	var details models.FacebookUserDetails
+func GetUserInfoFromFacebook(token string) (models.UserDetails, error) {
+	var details models.UserDetails
 	req, _ := http.NewRequest(
 		"GET",
 		"https://graph.facebook.com/me?fields=id,name,email&access_token="+token,
@@ -43,7 +43,7 @@ func GetUserInfoFromFacebook(token string) (models.FacebookUserDetails, error) {
 	res, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return models.FacebookUserDetails{},
+		return models.UserDetails{},
 			errors.New("error ocurred while getting user info from Facebook")
 	}
 
@@ -52,7 +52,7 @@ func GetUserInfoFromFacebook(token string) (models.FacebookUserDetails, error) {
 	defer res.Body.Close()
 
 	if err != nil {
-		return models.FacebookUserDetails{},
+		return models.UserDetails{},
 			errors.New("error ocurred while getting user info from Facebook")
 	}
 
@@ -70,52 +70,44 @@ func (h handler) HandleFacebookLogin(c *gin.Context) {
 	var code = c.Request.FormValue("code")
 
 	if state != GetRandomOAuthStateString() {
-		http.Redirect(
-			c.Writer, c.Request,
-			"/?invalidlogin=true",
-			http.StatusTemporaryRedirect,
+		c.AbortWithStatusJSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "error while logging in user"},
 		)
+
+		return
 	}
 
 	var config = GetFacebookOAuthConfig()
 	token, err := config.Exchange(context.TODO(), code)
 
 	if err != nil {
-		http.Redirect(
-			c.Writer,
-			c.Request,
-			"/?invalidlogin=true",
-			http.StatusTemporaryRedirect,
-		)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
 	}
 
 	details, err := GetUserInfoFromFacebook(token.AccessToken)
 
 	if err != nil {
-		http.Redirect(
-			c.Writer,
-			c.Request,
-			"/?invalidlogin=true",
-			http.StatusTemporaryRedirect,
-		)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
 	}
 
 	authToken, err := SignInUser(details, h.DB)
 
 	if err != nil {
-		http.Redirect(
-			c.Writer,
-			c.Request,
-			"/?invalidlogin=true",
-			http.StatusTemporaryRedirect,
-		)
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"token": authToken})
 }
 
-func SignInUser(details models.FacebookUserDetails, db *mongo.Database) (string, error) {
-	if details == (models.FacebookUserDetails{}) {
+func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) {
+	if details == (models.UserDetails{}) {
 		return "", errors.New("user details can't be empty")
 	}
 

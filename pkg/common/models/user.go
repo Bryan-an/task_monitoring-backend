@@ -17,7 +17,7 @@ type User struct {
 	UpdatedAt time.Time          `json:"updated_at" bson:"updated_at,omitempty"`
 }
 
-type FacebookUserDetails struct {
+type UserDetails struct {
 	ID    string
 	Name  string
 	Email string
