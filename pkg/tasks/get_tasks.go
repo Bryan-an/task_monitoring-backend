@@ -1,16 +1,25 @@
 package tasks
 
 import (
+	"bytes"
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
 	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (h handler) GetTasks(c *gin.Context) {
+	priority := c.Query("priority")
+	complexity := c.Query("complexity")
+	labels := c.Query("labels")
+	order := c.DefaultQuery("order", "des")
+
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
@@ -22,12 +31,48 @@ func (h handler) GetTasks(c *gin.Context) {
 	taskCollection := h.DB.Collection("tasks")
 	var tasks []models.Task
 
-	filter := bson.D{
-		{Key: "user_id", Value: uid},
-		{Key: "status", Value: "created"},
+	filter := bson.M{
+		"user_id": uid,
+		"status":  "created",
 	}
 
-	cursor, err := taskCollection.Find(context.TODO(), filter)
+	if priority != "" {
+		filter["priority"] = priority
+	}
+
+	if complexity != "" {
+		filter["complexity"] = complexity
+	}
+
+	if labels != "" {
+		ls := strings.Split(labels, ",")
+
+		var b bytes.Buffer
+
+		for i, l := range ls {
+			if i == 0 {
+				b.WriteString("(^" + l + "$)")
+			} else {
+				b.WriteString("|(^" + l + "$)")
+			}
+		}
+
+		filter["labels"] = bson.D{{
+			Key: "$regex", Value: primitive.Regex{Pattern: b.String(), Options: "i"},
+		}}
+	}
+
+	var sort int
+
+	if order == "asc" {
+		sort = 1
+	} else {
+		sort = -1
+	}
+
+	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: sort}})
+
+	cursor, err := taskCollection.Find(context.TODO(), filter, opts)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

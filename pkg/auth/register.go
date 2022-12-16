@@ -41,7 +41,12 @@ func (h handler) Register(c *gin.Context) {
 	}
 
 	usersCollection := h.DB.Collection("users")
-	filter := bson.D{{Key: "email", Value: input.Email}}
+
+	filter := bson.D{
+		{Key: "email", Value: input.Email},
+		{Key: "status", Value: "active"},
+	}
+
 	var user models.User
 
 	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err == nil {

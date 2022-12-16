@@ -15,10 +15,11 @@ import (
 )
 
 type UpdateInput struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description" binding:"required"`
-	Priority    string `json:"priority" binding:"required,oneof=low medium high"`
-	Complexity  string `json:"complexity" binding:"required,oneof=low medium high"`
+	Title       string   `json:"title" binding:"required"`
+	Description string   `json:"description" binding:"required"`
+	Labels      []string `json:"labels"`
+	Priority    string   `json:"priority" binding:"required,oneof=low medium high"`
+	Complexity  string   `json:"complexity" binding:"required,oneof=low medium high"`
 }
 
 func (h handler) UpdateTask(c *gin.Context) {
@@ -69,6 +70,7 @@ func (h handler) UpdateTask(c *gin.Context) {
 			Value: bson.D{
 				{Key: "title", Value: input.Title},
 				{Key: "description", Value: input.Description},
+				{Key: "labels", Value: input.Labels},
 				{Key: "priority", Value: input.Priority},
 				{Key: "complexity", Value: input.Complexity},
 				{Key: "updated_at", Value: time.Now()},

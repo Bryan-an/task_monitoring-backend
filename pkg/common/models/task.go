@@ -11,6 +11,7 @@ type Task struct {
 	UserId      string             `json:"user_id" bson:"user_id,omitempty"`
 	Title       string             `json:"title" bson:"title,omitempty"`
 	Description string             `json:"description" bson:"description,omitempty"`
+	Labels      []string           `json:"labels" bson:"labels"`
 	Priority    string             `json:"priority" bson:"priority,omitempty"`
 	Complexity  string             `json:"complexity" bson:"complexity,omitempty"`
 	Status      string             `json:"status" bson:"status,omitempty"`

@@ -13,10 +13,11 @@ import (
 )
 
 type AddInput struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description" binding:"required"`
-	Priority    string `json:"priority" binding:"required,oneof=low medium high"`
-	Complexity  string `json:"complexity" binding:"required,oneof=low medium high"`
+	Title       string   `json:"title" binding:"required"`
+	Description string   `json:"description" binding:"required"`
+	Labels      []string `json:"labels"`
+	Priority    string   `json:"priority" binding:"required,oneof=low medium high"`
+	Complexity  string   `json:"complexity" binding:"required,oneof=low medium high"`
 }
 
 func (h handler) AddTask(c *gin.Context) {
@@ -48,6 +49,7 @@ func (h handler) AddTask(c *gin.Context) {
 		UserId:      uid,
 		Title:       input.Title,
 		Description: input.Description,
+		Labels:      input.Labels,
 		Priority:    input.Priority,
 		Complexity:  input.Complexity,
 		Status:      "created",

@@ -21,6 +21,12 @@ func Connect() *mongo.Client {
 		return nil
 	}
 
+	err = client.Ping(context.TODO(), nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	dbName := os.Getenv("DB_NAME")
 
 	_, err = client.Database(dbName).Collection("users").Indexes().CreateOne(
@@ -36,6 +42,8 @@ func Connect() *mongo.Client {
 
 		return nil
 	}
+
+	log.Println("Database connected")
 
 	return client
 }

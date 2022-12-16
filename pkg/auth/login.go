@@ -37,7 +37,12 @@ func (h handler) Login(c *gin.Context) {
 	}
 
 	usersCollection := h.DB.Collection("users")
-	filter := bson.D{{Key: "email", Value: input.Email}}
+
+	filter := bson.D{
+		{Key: "email", Value: input.Email},
+		{Key: "status", Value: "active"},
+	}
+
 	var u models.User
 
 	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&u); err != nil {
