@@ -3,9 +3,9 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
@@ -57,7 +57,11 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
-	const minEntropy = 50
+	minEntropy, err := strconv.ParseFloat(os.Getenv("MIN_ENTROPY_BITS"), 64)
+
+	if err != nil {
+		minEntropy = 50
+	}
 
 	if err := passwordvalidator.Validate(input.Password, minEntropy); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": []utils.ErrorMsg{
@@ -77,7 +81,7 @@ func (h handler) Register(c *gin.Context) {
 	hash, err := utils.HashPassword(input.Password)
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 
 		return
 	}
@@ -103,7 +107,7 @@ func (h handler) Register(c *gin.Context) {
 	}
 
 	s := models.Settings{
-		UserId: fmt.Sprint(req.InsertedID.(primitive.ObjectID).Hex()),
+		UserId: req.InsertedID.(primitive.ObjectID).Hex(),
 		Notifications: models.Notification{
 			Email:  false,
 			Mobile: true,
@@ -115,9 +119,9 @@ func (h handler) Register(c *gin.Context) {
 	}
 
 	settingsCollection := h.DB.Collection("settings")
+
 	if _, err = settingsCollection.InsertOne(context.TODO(), s); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-		log.Fatal(err)
 
 		return
 	}

@@ -70,7 +70,7 @@ func (h handler) AddSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "settings added",
+		"message": "settings added successfully",
 		"id":      req.InsertedID,
 	})
 }

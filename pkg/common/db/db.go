@@ -25,6 +25,8 @@ func Connect() *mongo.Client {
 
 	if err != nil {
 		log.Fatal(err)
+
+		return nil
 	}
 
 	dbName := os.Getenv("DB_NAME")

@@ -63,6 +63,6 @@ func (h handler) DeleteUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"messasge": "user unsubscribed",
+		"messasge": "user unsubscribed successfully",
 	})
 }

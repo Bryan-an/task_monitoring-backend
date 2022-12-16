@@ -85,6 +85,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"messasge": "user updated",
+		"messasge": "user info updated successfully",
 	})
 }

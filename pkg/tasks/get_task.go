@@ -50,7 +50,6 @@ func (h handler) GetTask(c *gin.Context) {
 		}
 
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 

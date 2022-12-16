@@ -28,6 +28,7 @@ func GetGoogleOAuthConfig() *oauth2.Config {
 
 func GetUserInfoFromGoogle(token string) (models.UserDetails, error) {
 	var details models.UserDetails
+
 	req, _ := http.NewRequest(
 		"GET",
 		"https://www.googleapis.com/oauth2/v2/userinfo?access_token="+token,

@@ -66,8 +66,8 @@ func (h handler) AddTask(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "task added",
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "task added successfully",
 		"id":      req.InsertedID,
 	})
 }

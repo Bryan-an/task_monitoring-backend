@@ -12,7 +12,7 @@ func ErrorHandler() gin.HandlerFunc {
 
 		if c.Errors.JSON() != nil {
 			for _, ginErr := range c.Errors {
-				log.Print(ginErr.Err.Error())
+				log.Println(ginErr.Err.Error())
 			}
 
 			c.JSON(-1, c.Errors.JSON())

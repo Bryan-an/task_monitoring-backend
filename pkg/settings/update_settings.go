@@ -76,6 +76,6 @@ func (h handler) UpdateSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "settings updated",
+		"message": "settings updated successfully",
 	})
 }

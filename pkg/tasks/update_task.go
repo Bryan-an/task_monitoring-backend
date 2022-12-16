@@ -95,6 +95,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "task updated",
+		"message": "task updated successfully",
 	})
 }

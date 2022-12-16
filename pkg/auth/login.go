@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
 	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -60,7 +62,7 @@ func (h handler) Login(c *gin.Context) {
 	}
 
 	if correct := verifyPassword(input.Password, u.Password); !correct {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"error": "user or password incorrect",
 		})
 
@@ -82,4 +84,81 @@ func verifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 
 	return err == nil
+}
+
+func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) {
+	if details == (models.UserDetails{}) {
+		return "", errors.New("user details can't be empty")
+	}
+
+	if details.Email == "" {
+		return "", errors.New("email can't be empty")
+	}
+
+	if details.Name == "" {
+		details.Name = details.Email
+	}
+
+	usersCollection := db.Collection("users")
+
+	filter := bson.D{
+		{Key: "email", Value: details.Email},
+		{Key: "status", Value: "active"},
+	}
+
+	var user models.User
+	var token string
+	var tokenErr error
+
+	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err != nil {
+		if err == mongo.ErrNoDocuments {
+			u := models.User{
+				Name:      details.Name,
+				Email:     details.Email,
+				Role:      "user",
+				Status:    "active",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			req, err := usersCollection.InsertOne(context.TODO(), u)
+
+			if err != nil {
+				return "", errors.New("error occurred while registering user")
+			}
+
+			uid := req.InsertedID.(primitive.ObjectID).Hex()
+
+			s := models.Settings{
+				UserId: uid,
+				Notifications: models.Notification{
+					Email:  false,
+					Mobile: true,
+				},
+				Security:  "something",
+				Theme:     "light",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}
+
+			settingsCollection := db.Collection("settings")
+
+			if _, err = settingsCollection.InsertOne(context.TODO(), s); err != nil {
+				return "", errors.New("error occurred while registering user")
+			}
+
+			token, tokenErr = utils.GenerateToken(uid)
+		} else {
+			return "", errors.New("error occurred while logging in user")
+		}
+
+	} else {
+		token, tokenErr = utils.GenerateToken(user.Id.Hex())
+	}
+
+	if tokenErr != nil {
+		return "", errors.New("error occurred while generating auth token")
+	}
+
+	return token, nil
 }
