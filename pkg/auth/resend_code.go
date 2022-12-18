@@ -13,7 +13,6 @@ import (
 )
 
 type ResendCodeInput struct {
-	Name  string `json:"name" binding:"required"`
 	Email string `json:"email" binding:"required,email"`
 }
 
@@ -46,11 +45,11 @@ func (h handler) ResendCode(c *gin.Context) {
 	if result.DeletedCount == 0 {
 		c.AbortWithStatusJSON(http.StatusInternalServerError,
 			gin.H{"error": "unable to replace email verification code"})
+
 		return
 	}
 
 	u := models.User{
-		Name:  input.Name,
 		Email: input.Email,
 	}
 
