@@ -21,4 +21,6 @@ func RegisterRoutes(r *gin.Engine, db *mongo.Database) {
 	routes.GET("/facebook/callback", h.HandleFacebookLogin)
 	routes.GET("/login/google", h.InitGoogleLogin)
 	routes.GET("/google/callback", h.HandleGoogleLogin)
+	routes.POST("/verify/email", h.VerifyEmail)
+	routes.POST("/verify/resendCode", h.ResendCode)
 }

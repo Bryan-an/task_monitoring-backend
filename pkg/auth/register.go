@@ -2,11 +2,14 @@ package auth
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	gomail "gopkg.in/mail.v2"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
 	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
@@ -126,8 +129,61 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
+	err = SendVerificationEmail(h, c, u)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "user registrated successfully",
+		"message": "please check your email for email verification code",
 		"id":      req.InsertedID,
 	})
+}
+
+func SendVerificationEmail(h handler, c *gin.Context, user models.User) error {
+	m := gomail.NewMessage()
+	from := os.Getenv("SENDER_EMAIL")
+	to := user.Email
+	password := os.Getenv("SENDER_PASSWORD")
+	host := "smtp.gmail.com"
+	port := 587
+	otp, err := utils.GetOTPToken(6)
+
+	if err != nil {
+		return err
+	}
+
+	m.SetHeader("From", from)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", "Tasker - Email code verification")
+	m.SetBody("text/html", "<p>This is your email verification code for Tasker: <b>"+otp+"</b></p>")
+	d := gomail.NewDialer(host, port, from, password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		return err
+	}
+
+	lifespan, err := strconv.Atoi(os.Getenv("EMAIL_VERIFICATION_CODE_EXPIRATION"))
+
+	if err != nil {
+		return err
+	}
+
+	data := &models.VerificationData{
+		Email:     user.Email,
+		Code:      otp,
+		ExpiresAt: time.Now().Add(time.Second * time.Duration(lifespan)),
+	}
+
+	coll := h.DB.Collection("verifications")
+
+	if _, err = coll.InsertOne(context.TODO(), data); err != nil {
+		return err
+	}
+
+	return nil
 }
