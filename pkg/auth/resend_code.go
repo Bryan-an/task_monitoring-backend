@@ -61,7 +61,7 @@ func (h handler) ResendCode(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"message": "please check your email for email verification code",
 	})
 }
