@@ -110,12 +110,12 @@ func (h handler) VerifyEmail(c *gin.Context) {
 }
 
 func verifyData(actualData models.VerificationData, data models.VerificationData) (bool, error) {
-	if actualData.ExpiresAt.Before(time.Now()) {
-		return false, errors.New("verification code has expired, please try generating a new code")
-	}
-
 	if actualData.Code != data.Code {
 		return false, errors.New("verification code provided is invalid, please look in your email for the code")
+	}
+
+	if actualData.ExpiresAt.Before(time.Now()) {
+		return false, errors.New("verification code has expired, please try generating a new code")
 	}
 
 	return true, nil
