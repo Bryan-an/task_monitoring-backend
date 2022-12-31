@@ -8,10 +8,16 @@ import (
 	"os"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
+	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/oauth2"
 	facebookOAuth "golang.org/x/oauth2/facebook"
 )
+
+type LoginInputMobile struct {
+	Token string `json:"token" binding:"required"`
+}
 
 func GetFacebookOAuthConfig() *oauth2.Config {
 	return &oauth2.Config{
@@ -84,6 +90,42 @@ func (h handler) HandleFacebookLogin(c *gin.Context) {
 	}
 
 	details, err := GetUserInfoFromFacebook(token.AccessToken)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	authToken, err := SignInUser(details, h.DB)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": authToken})
+}
+
+func (h handler) LoginWithFacebookMobile(c *gin.Context) {
+	var input LoginInputMobile
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		var ve validator.ValidationErrors
+
+		if errors.As(err, &ve) {
+			out := utils.FillErrors(ve)
+
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
+		} else {
+			c.AbortWithError(http.StatusBadRequest, err)
+		}
+
+		return
+	}
+
+	details, err := GetUserInfoFromFacebook(input.Token)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

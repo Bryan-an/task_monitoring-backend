@@ -8,7 +8,9 @@ import (
 	"os"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
+	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -92,6 +94,42 @@ func (h handler) HandleGoogleLogin(c *gin.Context) {
 	}
 
 	details, err := GetUserInfoFromGoogle(token.AccessToken)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	authToken, err := SignInUser(details, h.DB)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": authToken})
+}
+
+func (h handler) LoginWithGoogleMobile(c *gin.Context) {
+	var input LoginInputMobile
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		var ve validator.ValidationErrors
+
+		if errors.As(err, &ve) {
+			out := utils.FillErrors(ve)
+
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
+		} else {
+			c.AbortWithError(http.StatusBadRequest, err)
+		}
+
+		return
+	}
+
+	details, err := GetUserInfoFromGoogle(input.Token)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
