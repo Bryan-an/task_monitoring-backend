@@ -129,16 +129,23 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 
 			uid := req.InsertedID.(primitive.ObjectID).Hex()
 
+			emailNotifications := false
+			mobileNotifications := true
+			security := "something"
+			theme := "light"
+			createdAt := time.Now()
+			updatedAt := time.Now()
+
 			s := models.Settings{
-				UserId: uid,
-				Notifications: models.Notification{
-					Email:  false,
-					Mobile: true,
+				UserId: &uid,
+				Notifications: &models.Notification{
+					Email:  &emailNotifications,
+					Mobile: &mobileNotifications,
 				},
-				Security:  "something",
-				Theme:     "light",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				Security:  &security,
+				Theme:     &theme,
+				CreatedAt: &createdAt,
+				UpdatedAt: &updatedAt,
 			}
 
 			settingsCollection := db.Collection("settings")

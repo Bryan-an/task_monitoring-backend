@@ -7,16 +7,16 @@ import (
 )
 
 type Notification struct {
-	Email  bool `json:"email" bson:"email"`
-	Mobile bool `json:"mobile" bson:"mobile"`
+	Email  *bool `json:"email,omitempty" bson:"email,omitempty"`
+	Mobile *bool `json:"mobile,omitempty" bson:"mobile,omitempty"`
 }
 
 type Settings struct {
-	Id            primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	UserId        string             `json:"user_id" bson:"user_id,omitempty"`
-	Notifications Notification       `json:"notifications" bson:"notifications,omitempty"`
-	Security      string             `json:"security" bson:"security,omitempty"`
-	Theme         string             `json:"theme" bson:"theme,omitempty"`
-	CreatedAt     time.Time          `json:"created_at" bson:"created_at,omitempty"`
-	UpdatedAt     time.Time          `json:"updated_at" bson:"updated_at,omitempty"`
+	Id            *primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	UserId        *string             `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	Notifications *Notification       `json:"notifications,omitempty" bson:"notifications,omitempty"`
+	Security      *string             `json:"security,omitempty" bson:"security,omitempty"`
+	Theme         *string             `json:"theme,omitempty" bson:"theme,omitempty"`
+	CreatedAt     *time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	UpdatedAt     *time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`
 }
