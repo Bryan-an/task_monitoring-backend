@@ -13,18 +13,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type notifications struct {
-	Email  *bool `json:"email"`
-	Mobile *bool `json:"mobile"`
+type ReplaceInput struct {
+	Notifications *Notification `json:"notifications" binding:"required"`
+	Security      *string       `json:"security" binding:"required"`
+	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
 }
 
-type UpdateInput struct {
-	Notifications *notifications `json:"notifications"`
-	Security      *string        `json:"security"`
-	Theme         *string        `json:"theme"`
-}
-
-func (h handler) UpdateSettings(c *gin.Context) {
+func (h handler) ReplaceSettings(c *gin.Context) {
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
@@ -33,7 +28,7 @@ func (h handler) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	var input UpdateInput
+	var input ReplaceInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -52,32 +47,15 @@ func (h handler) UpdateSettings(c *gin.Context) {
 	settingsCollection := h.DB.Collection("settings")
 	filter := bson.D{{Key: "user_id", Value: uid}}
 
-	data := bson.M{
-		"updated_at": time.Now(),
-	}
-
-	if input.Notifications != nil {
-		if input.Notifications.Email != nil {
-			data["notifications.email"] = input.Notifications.Email
-		}
-
-		if input.Notifications.Mobile != nil {
-			data["notifications.mobile"] = input.Notifications.Mobile
-		}
-	}
-
-	if input.Security != nil {
-		data["security"] = input.Security
-	}
-
-	if input.Theme != nil {
-		data["theme"] = input.Theme
-	}
-
 	update := bson.D{
 		{
-			Key:   "$set",
-			Value: data,
+			Key: "$set",
+			Value: bson.D{
+				{Key: "notifications", Value: input.Notifications},
+				{Key: "security", Value: input.Security},
+				{Key: "theme", Value: input.Theme},
+				{Key: "updated_at", Value: time.Now()},
+			},
 		},
 	}
 
@@ -98,6 +76,6 @@ func (h handler) UpdateSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "settings updated successfully",
+		"message": "settings replaced successfully",
 	})
 }
