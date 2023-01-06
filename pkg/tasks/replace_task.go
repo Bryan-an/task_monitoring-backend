@@ -14,18 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UpdateInput struct {
-	Title       *string    `json:"title"`
-	Description *string    `json:"description"`
+type ReplaceInput struct {
+	Title       *string    `json:"title" binding:"required"`
+	Description *string    `json:"description" binding:"required"`
 	Labels      *[]string  `json:"labels"`
-	Priority    *string    `json:"priority"`
-	Complexity  *string    `json:"complexity"`
+	Priority    *string    `json:"priority" binding:"required,oneof=low medium high"`
+	Complexity  *string    `json:"complexity" binding:"required,oneof=low medium high"`
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
-	Done        *bool      `json:"done"`
+	Done        *bool      `json:"done" binding:"required"`
 }
 
-func (h handler) UpdateTask(c *gin.Context) {
+func (h handler) ReplaceTask(c *gin.Context) {
 	taskId := c.Param("id")
 	uid, err := utils.ExtractTokenID(c)
 
@@ -43,7 +43,7 @@ func (h handler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	var input UpdateInput
+	var input ReplaceInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -68,27 +68,16 @@ func (h handler) UpdateTask(c *gin.Context) {
 	}
 
 	data := bson.M{
-		"updated_at": time.Now(),
-	}
-
-	if input.Title != nil {
-		data["title"] = input.Title
-	}
-
-	if input.Description != nil {
-		data["description"] = input.Description
+		"title":       input.Title,
+		"description": input.Description,
+		"priority":    input.Priority,
+		"complexity":  input.Complexity,
+		"done":        input.Done,
+		"updated_at":  time.Now(),
 	}
 
 	if input.Labels != nil {
 		data["labels"] = input.Labels
-	}
-
-	if input.Priority != nil {
-		data["priority"] = input.Priority
-	}
-
-	if input.Complexity != nil {
-		data["complexity"] = input.Complexity
 	}
 
 	if input.From != nil {
@@ -97,10 +86,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if input.To != nil {
 		data["to"] = input.To
-	}
-
-	if input.Done != nil {
-		data["done"] = input.Done
 	}
 
 	update := bson.D{
@@ -127,6 +112,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "task updated successfully",
+		"message": "task replaced successfully",
 	})
 }

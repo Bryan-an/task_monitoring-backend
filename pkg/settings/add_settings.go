@@ -13,14 +13,14 @@ import (
 )
 
 type Notification struct {
-	Email  bool `json:"email"`
-	Mobile bool `json:"mobile"`
+	Email  *bool `json:"email" binding:"required"`
+	Mobile *bool `json:"mobile" binding:"required"`
 }
 
 type AddInput struct {
-	Notifications Notification `json:"notifications" binding:"required"`
-	Security      string       `json:"security" binding:"required"`
-	Theme         string       `json:"theme" binding:"required,oneof=dark light"`
+	Notifications *Notification `json:"notifications" binding:"required"`
+	Security      *string       `json:"security" binding:"required"`
+	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
 }
 
 func (h handler) AddSettings(c *gin.Context) {
@@ -48,16 +48,19 @@ func (h handler) AddSettings(c *gin.Context) {
 		return
 	}
 
+	createdAt := time.Now()
+	updatedAt := time.Now()
+
 	s := models.Settings{
-		UserId: uid,
-		Notifications: models.Notification{
+		UserId: &uid,
+		Notifications: &models.Notification{
 			Email:  input.Notifications.Email,
 			Mobile: input.Notifications.Mobile,
 		},
 		Security:  input.Security,
 		Theme:     input.Theme,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
 	}
 
 	settingsCollection := h.DB.Collection("settings")

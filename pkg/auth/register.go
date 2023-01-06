@@ -109,16 +109,24 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
+	userId := req.InsertedID.(primitive.ObjectID).Hex()
+	emailNotifications := false
+	mobileNotifications := true
+	security := "something"
+	theme := "light"
+	createdAt := time.Now()
+	updatedAt := time.Now()
+
 	s := models.Settings{
-		UserId: req.InsertedID.(primitive.ObjectID).Hex(),
-		Notifications: models.Notification{
-			Email:  false,
-			Mobile: true,
+		UserId: &userId,
+		Notifications: &models.Notification{
+			Email:  &emailNotifications,
+			Mobile: &mobileNotifications,
 		},
-		Security:  "something",
-		Theme:     "light",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Security:  &security,
+		Theme:     &theme,
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
 	}
 
 	settingsCollection := h.DB.Collection("settings")
