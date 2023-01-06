@@ -14,8 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UpdateInput struct {
-	Name string `json:"name" binding:"required"`
+type updateInput struct {
+	Name *string `json:"name"`
 }
 
 func (h handler) UpdateUser(c *gin.Context) {
@@ -35,7 +35,7 @@ func (h handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	var input UpdateInput
+	var input updateInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -58,13 +58,18 @@ func (h handler) UpdateUser(c *gin.Context) {
 		{Key: "status", Value: "active"},
 	}
 
+	data := bson.M{
+		"updated_at": time.Now(),
+	}
+
+	if input.Name != nil {
+		data["name"] = input.Name
+	}
+
 	update := bson.D{
 		{
-			Key: "$set",
-			Value: bson.D{
-				{Key: "name", Value: input.Name},
-				{Key: "updated_at", Value: time.Now()},
-			},
+			Key:   "$set",
+			Value: data,
 		},
 	}
 

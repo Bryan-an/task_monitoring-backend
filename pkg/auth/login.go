@@ -16,13 +16,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type LoginInput struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+type loginInput struct {
+	Email    *string `json:"email" binding:"required,email"`
+	Password *string `json:"password" binding:"required"`
 }
 
 func (h handler) Login(c *gin.Context) {
-	var input LoginInput
+	var input loginInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -61,7 +61,7 @@ func (h handler) Login(c *gin.Context) {
 		return
 	}
 
-	if correct := verifyPassword(input.Password, u.Password); !correct {
+	if correct := verifyPassword(*input.Password, *u.Password); !correct {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 			"error": "user or password incorrect",
 		})
@@ -112,13 +112,17 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 
 	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err != nil {
 		if err == mongo.ErrNoDocuments {
+			role := "user"
+			status := "active"
+			now := time.Now()
+
 			u := models.User{
-				Name:      details.Name,
-				Email:     details.Email,
-				Role:      "user",
-				Status:    "active",
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
+				Name:      &details.Name,
+				Email:     &details.Email,
+				Role:      &role,
+				Status:    &status,
+				CreatedAt: &now,
+				UpdatedAt: &now,
 			}
 
 			req, err := usersCollection.InsertOne(context.TODO(), u)
@@ -133,8 +137,6 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 			mobileNotifications := true
 			security := "something"
 			theme := "light"
-			createdAt := time.Now()
-			updatedAt := time.Now()
 
 			s := models.Settings{
 				UserId: &uid,
@@ -144,8 +146,8 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 				},
 				Security:  &security,
 				Theme:     &theme,
-				CreatedAt: &createdAt,
-				UpdatedAt: &updatedAt,
+				CreatedAt: &now,
+				UpdatedAt: &now,
 			}
 
 			settingsCollection := db.Collection("settings")

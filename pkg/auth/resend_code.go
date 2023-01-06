@@ -12,12 +12,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type ResendCodeInput struct {
-	Email string `json:"email" binding:"required,email"`
+type resendCodeInput struct {
+	Email *string `json:"email" binding:"required,email"`
 }
 
 func (h handler) ResendCode(c *gin.Context) {
-	var input ResendCodeInput
+	var input resendCodeInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors

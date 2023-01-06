@@ -1,4 +1,4 @@
-package settings
+package users
 
 import (
 	"context"
@@ -11,16 +11,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type replaceInput struct {
-	Notifications *notification `json:"notifications" binding:"required"`
-	Security      *string       `json:"security" binding:"required"`
-	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
+	Name *string `json:"name" binding:"required"`
 }
 
-func (h handler) ReplaceSettings(c *gin.Context) {
+func (h handler) ReplaceUser(c *gin.Context) {
 	uid, err := utils.ExtractTokenID(c)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(uid)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -44,22 +51,24 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 		return
 	}
 
-	settingsCollection := h.DB.Collection("settings")
-	filter := bson.D{{Key: "user_id", Value: uid}}
+	coll := h.DB.Collection("users")
+
+	filter := bson.D{
+		{Key: "_id", Value: id},
+		{Key: "status", Value: "active"},
+	}
 
 	update := bson.D{
 		{
 			Key: "$set",
 			Value: bson.D{
-				{Key: "notifications", Value: input.Notifications},
-				{Key: "security", Value: input.Security},
-				{Key: "theme", Value: input.Theme},
+				{Key: "name", Value: input.Name},
 				{Key: "updated_at", Value: time.Now()},
 			},
 		},
 	}
 
-	result, err := settingsCollection.UpdateOne(context.TODO(), filter, update)
+	result, err := coll.UpdateOne(context.TODO(), filter, update)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -69,13 +78,13 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 
 	if result.MatchedCount == 0 {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("settings not found for user with id '%s'", uid),
+			"error": fmt.Sprintf("user not found with id '%s'", uid),
 		})
 
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "settings replaced successfully",
+		"messasge": "user info replaced successfully",
 	})
 }

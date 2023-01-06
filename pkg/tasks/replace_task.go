@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ReplaceInput struct {
+type replaceInput struct {
 	Title       *string    `json:"title" binding:"required"`
 	Description *string    `json:"description" binding:"required"`
 	Labels      *[]string  `json:"labels"`
@@ -43,7 +43,7 @@ func (h handler) ReplaceTask(c *gin.Context) {
 		return
 	}
 
-	var input ReplaceInput
+	var input replaceInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -67,31 +67,20 @@ func (h handler) ReplaceTask(c *gin.Context) {
 		{Key: "status", Value: "created"},
 	}
 
-	data := bson.M{
-		"title":       input.Title,
-		"description": input.Description,
-		"priority":    input.Priority,
-		"complexity":  input.Complexity,
-		"done":        input.Done,
-		"updated_at":  time.Now(),
-	}
-
-	if input.Labels != nil {
-		data["labels"] = input.Labels
-	}
-
-	if input.From != nil {
-		data["from"] = input.From
-	}
-
-	if input.To != nil {
-		data["to"] = input.To
-	}
-
 	update := bson.D{
 		{
-			Key:   "$set",
-			Value: data,
+			Key: "$set",
+			Value: bson.D{
+				{Key: "title", Value: input.Title},
+				{Key: "description", Value: input.Description},
+				{Key: "labels", Value: input.Labels},
+				{Key: "priority", Value: input.Priority},
+				{Key: "complexity", Value: input.Complexity},
+				{Key: "done", Value: input.Done},
+				{Key: "from", Value: input.From},
+				{Key: "to", Value: input.To},
+				{Key: "updated_at", Value: time.Now()},
+			},
 		},
 	}
 

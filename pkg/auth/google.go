@@ -113,7 +113,7 @@ func (h handler) HandleGoogleLogin(c *gin.Context) {
 }
 
 func (h handler) LoginWithGoogleMobile(c *gin.Context) {
-	var input LoginInputMobile
+	var input loginInputMobile
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -129,7 +129,7 @@ func (h handler) LoginWithGoogleMobile(c *gin.Context) {
 		return
 	}
 
-	details, err := GetUserInfoFromGoogle(input.Token)
+	details, err := GetUserInfoFromGoogle(*input.Token)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

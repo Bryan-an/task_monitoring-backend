@@ -12,7 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type AddInput struct {
+type addInput struct {
 	Title       *string    `json:"title" binding:"required"`
 	Description *string    `json:"description" binding:"required"`
 	Labels      *[]string  `json:"labels"`
@@ -32,7 +32,7 @@ func (h handler) AddTask(c *gin.Context) {
 		return
 	}
 
-	var input AddInput
+	var input addInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -49,8 +49,7 @@ func (h handler) AddTask(c *gin.Context) {
 	}
 
 	status := "created"
-	createdAt := time.Now()
-	updatedAt := time.Now()
+	now := time.Now()
 
 	t := models.Task{
 		UserId:      &uid,
@@ -63,8 +62,8 @@ func (h handler) AddTask(c *gin.Context) {
 		To:          input.To,
 		Done:        input.Done,
 		Status:      &status,
-		CreatedAt:   &createdAt,
-		UpdatedAt:   &updatedAt,
+		CreatedAt:   &now,
+		UpdatedAt:   &now,
 	}
 
 	tasksCollection := h.DB.Collection("tasks")

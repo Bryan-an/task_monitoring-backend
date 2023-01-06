@@ -41,7 +41,7 @@ func (h handler) VerifyEmail(c *gin.Context) {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
 				"error": fmt.Sprintf(
 					"verification code not found for user with email '%s'",
-					data.Email),
+					*data.Email),
 			})
 
 			return
@@ -83,7 +83,7 @@ func (h handler) VerifyEmail(c *gin.Context) {
 
 	if result.MatchedCount == 0 {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("user not found with email '%s'", data.Email),
+			"error": fmt.Sprintf("user not found with email '%s'", *data.Email),
 		})
 
 		return
@@ -98,7 +98,7 @@ func (h handler) VerifyEmail(c *gin.Context) {
 
 	if verificationsResult.DeletedCount == 0 {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("verification code not found for user with email '%s'", data.Email),
+			"error": fmt.Sprintf("verification code not found for user with email '%s'", *data.Email),
 		})
 
 		return
@@ -110,7 +110,7 @@ func (h handler) VerifyEmail(c *gin.Context) {
 }
 
 func verifyData(actualData models.VerificationData, data models.VerificationData) (bool, error) {
-	if actualData.Code != data.Code {
+	if *actualData.Code != *data.Code {
 		return false, errors.New("verification code provided is invalid, please look in your email for the code")
 	}
 
