@@ -15,8 +15,8 @@ import (
 	facebookOAuth "golang.org/x/oauth2/facebook"
 )
 
-type LoginInputMobile struct {
-	Token string `json:"token" binding:"required"`
+type loginInputMobile struct {
+	Token *string `json:"token" binding:"required"`
 }
 
 func GetFacebookOAuthConfig() *oauth2.Config {
@@ -109,7 +109,7 @@ func (h handler) HandleFacebookLogin(c *gin.Context) {
 }
 
 func (h handler) LoginWithFacebookMobile(c *gin.Context) {
-	var input LoginInputMobile
+	var input loginInputMobile
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -125,7 +125,7 @@ func (h handler) LoginWithFacebookMobile(c *gin.Context) {
 		return
 	}
 
-	details, err := GetUserInfoFromFacebook(input.Token)
+	details, err := GetUserInfoFromFacebook(*input.Token)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)

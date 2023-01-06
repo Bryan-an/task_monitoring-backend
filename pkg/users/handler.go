@@ -19,6 +19,7 @@ func RegisterRoutes(r *gin.Engine, db *mongo.Database) {
 
 	routes.Use(middlewares.JwtAuthMiddleware())
 	routes.GET("/", h.GetUser)
-	routes.PUT("/", h.UpdateUser)
+	routes.PUT("/", h.ReplaceUser)
+	routes.PATCH("/", h.UpdateUser)
 	routes.DELETE("/", h.DeleteUser)
 }

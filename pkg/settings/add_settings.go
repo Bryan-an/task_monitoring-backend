@@ -12,13 +12,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type Notification struct {
+type notification struct {
 	Email  *bool `json:"email" binding:"required"`
 	Mobile *bool `json:"mobile" binding:"required"`
 }
 
-type AddInput struct {
-	Notifications *Notification `json:"notifications" binding:"required"`
+type addInput struct {
+	Notifications *notification `json:"notifications" binding:"required"`
 	Security      *string       `json:"security" binding:"required"`
 	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
 }
@@ -32,7 +32,7 @@ func (h handler) AddSettings(c *gin.Context) {
 		return
 	}
 
-	var input AddInput
+	var input addInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -48,8 +48,7 @@ func (h handler) AddSettings(c *gin.Context) {
 		return
 	}
 
-	createdAt := time.Now()
-	updatedAt := time.Now()
+	now := time.Now()
 
 	s := models.Settings{
 		UserId: &uid,
@@ -59,8 +58,8 @@ func (h handler) AddSettings(c *gin.Context) {
 		},
 		Security:  input.Security,
 		Theme:     input.Theme,
-		CreatedAt: &createdAt,
-		UpdatedAt: &updatedAt,
+		CreatedAt: &now,
+		UpdatedAt: &now,
 	}
 
 	settingsCollection := h.DB.Collection("settings")

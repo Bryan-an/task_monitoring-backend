@@ -20,14 +20,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type RegisterInput struct {
-	Name     string `json:"name"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+type registerInput struct {
+	Name     *string `json:"name"`
+	Email    *string `json:"email" binding:"required,email"`
+	Password *string `json:"password" binding:"required"`
 }
 
 func (h handler) Register(c *gin.Context) {
-	var input RegisterInput
+	var input registerInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
@@ -66,7 +66,7 @@ func (h handler) Register(c *gin.Context) {
 		minEntropy = 50
 	}
 
-	if err := passwordvalidator.Validate(input.Password, minEntropy); err != nil {
+	if err := passwordvalidator.Validate(*input.Password, minEntropy); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": []utils.ErrorMsg{
 			{
 				Field:   "Password",
@@ -77,11 +77,11 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
-	if input.Name == "" {
+	if input.Name == nil {
 		input.Name = input.Email
 	}
 
-	hash, err := utils.HashPassword(input.Password)
+	hash, err := utils.HashPassword(*input.Password)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -89,16 +89,20 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
-	input.Password = hash
+	input.Password = &hash
+
+	role := "user"
+	status := "created"
+	now := time.Now()
 
 	u := models.User{
 		Name:      input.Name,
 		Email:     input.Email,
 		Password:  input.Password,
-		Role:      "user",
-		Status:    "created",
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		Role:      &role,
+		Status:    &status,
+		CreatedAt: &now,
+		UpdatedAt: &now,
 	}
 
 	req, err := usersCollection.InsertOne(context.TODO(), u)
@@ -114,8 +118,6 @@ func (h handler) Register(c *gin.Context) {
 	mobileNotifications := true
 	security := "something"
 	theme := "light"
-	createdAt := time.Now()
-	updatedAt := time.Now()
 
 	s := models.Settings{
 		UserId: &userId,
@@ -125,8 +127,8 @@ func (h handler) Register(c *gin.Context) {
 		},
 		Security:  &security,
 		Theme:     &theme,
-		CreatedAt: &createdAt,
-		UpdatedAt: &updatedAt,
+		CreatedAt: &now,
+		UpdatedAt: &now,
 	}
 
 	settingsCollection := h.DB.Collection("settings")
@@ -154,7 +156,7 @@ func (h handler) Register(c *gin.Context) {
 func SendVerificationEmail(h handler, c *gin.Context, user models.User) error {
 	m := gomail.NewMessage()
 	from := os.Getenv("SENDER_EMAIL")
-	to := user.Email
+	to := *user.Email
 	password := os.Getenv("SENDER_PASSWORD")
 	host := "smtp.gmail.com"
 	port := 587
@@ -181,10 +183,12 @@ func SendVerificationEmail(h handler, c *gin.Context, user models.User) error {
 		return err
 	}
 
+	expiresAt := time.Now().Add(time.Second * time.Duration(lifespan))
+
 	data := &models.VerificationData{
 		Email:     user.Email,
-		Code:      otp,
-		ExpiresAt: time.Now().Add(time.Second * time.Duration(lifespan)),
+		Code:      &otp,
+		ExpiresAt: &expiresAt,
 	}
 
 	coll := h.DB.Collection("verifications")

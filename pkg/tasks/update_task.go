@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type UpdateInput struct {
+type updateInput struct {
 	Title       *string    `json:"title"`
 	Description *string    `json:"description"`
 	Labels      *[]string  `json:"labels"`
@@ -43,7 +43,7 @@ func (h handler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	var input UpdateInput
+	var input updateInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		var ve validator.ValidationErrors
