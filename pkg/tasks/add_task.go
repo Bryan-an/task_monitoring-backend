@@ -22,6 +22,7 @@ type addInput struct {
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done" binding:"required"`
+	Remind      *bool      `json:"remind" binding:"required"`
 }
 
 func (h handler) AddTask(c *gin.Context) {
@@ -63,6 +64,7 @@ func (h handler) AddTask(c *gin.Context) {
 		From:        input.From,
 		To:          input.To,
 		Done:        input.Done,
+		Remind:      input.Remind,
 		Status:      &status,
 		CreatedAt:   &now,
 		UpdatedAt:   &now,
