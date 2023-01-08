@@ -18,6 +18,7 @@ type Task struct {
 	From        *time.Time          `json:"from,omitempty" bson:"from,omitempty"`
 	To          *time.Time          `json:"to,omitempty" bson:"to,omitempty"`
 	Done        *bool               `json:"done,omitempty" bson:"done,omitempty"`
+	Remind      *bool               `json:"remind,omitempty" bson:"remind,omitempty"`
 	Status      *string             `json:"status,omitempty" bson:"status,omitempty"`
 	CreatedAt   *time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
 	UpdatedAt   *time.Time          `json:"updated_at,omitempty" bson:"updated_at,omitempty"`

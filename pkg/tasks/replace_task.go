@@ -24,6 +24,7 @@ type replaceInput struct {
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done" binding:"required"`
+	Remind      *bool      `json:"remind" binding:"required"`
 }
 
 func (h handler) ReplaceTask(c *gin.Context) {
@@ -77,10 +78,11 @@ func (h handler) ReplaceTask(c *gin.Context) {
 				{Key: "labels", Value: input.Labels},
 				{Key: "priority", Value: input.Priority},
 				{Key: "complexity", Value: input.Complexity},
-				{Key: "done", Value: input.Done},
 				{Key: "date", Value: input.Date},
 				{Key: "from", Value: input.From},
 				{Key: "to", Value: input.To},
+				{Key: "done", Value: input.Done},
+				{Key: "remind", Value: input.Remind},
 				{Key: "updated_at", Value: time.Now()},
 			},
 		},

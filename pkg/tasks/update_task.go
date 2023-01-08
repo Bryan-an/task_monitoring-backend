@@ -24,6 +24,7 @@ type updateInput struct {
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done"`
+	Remind      *bool      `json:"remind"`
 }
 
 func (h handler) UpdateTask(c *gin.Context) {
@@ -106,6 +107,10 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if input.Done != nil {
 		data["done"] = input.Done
+	}
+
+	if input.Remind != nil {
+		data["remind"] = input.Remind
 	}
 
 	update := bson.D{
