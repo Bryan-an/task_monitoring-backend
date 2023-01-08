@@ -20,6 +20,7 @@ type updateInput struct {
 	Labels      *[]string  `json:"labels"`
 	Priority    *string    `json:"priority"`
 	Complexity  *string    `json:"complexity"`
+	Date        *time.Time `json:"date"`
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done"`
@@ -89,6 +90,10 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if input.Complexity != nil {
 		data["complexity"] = input.Complexity
+	}
+
+	if input.Date != nil {
+		data["date"] = input.Date
 	}
 
 	if input.From != nil {

@@ -20,6 +20,7 @@ type replaceInput struct {
 	Labels      *[]string  `json:"labels"`
 	Priority    *string    `json:"priority" binding:"required,oneof=low medium high"`
 	Complexity  *string    `json:"complexity" binding:"required,oneof=low medium high"`
+	Date        *time.Time `json:"date" binding:"required"`
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done" binding:"required"`
@@ -77,6 +78,7 @@ func (h handler) ReplaceTask(c *gin.Context) {
 				{Key: "priority", Value: input.Priority},
 				{Key: "complexity", Value: input.Complexity},
 				{Key: "done", Value: input.Done},
+				{Key: "date", Value: input.Date},
 				{Key: "from", Value: input.From},
 				{Key: "to", Value: input.To},
 				{Key: "updated_at", Value: time.Now()},
