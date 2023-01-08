@@ -14,7 +14,7 @@ import (
 
 type addInput struct {
 	Title       *string    `json:"title" binding:"required"`
-	Description *string    `json:"description" binding:"required"`
+	Description *string    `json:"description"`
 	Labels      *[]string  `json:"labels"`
 	Priority    *string    `json:"priority" binding:"required,oneof=low medium high"`
 	Complexity  *string    `json:"complexity" binding:"required,oneof=low medium high"`
