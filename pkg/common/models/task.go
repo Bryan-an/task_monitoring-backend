@@ -14,6 +14,7 @@ type Task struct {
 	Labels      *[]string           `json:"labels,omitempty" bson:"labels,omitempty"`
 	Priority    *string             `json:"priority,omitempty" bson:"priority,omitempty"`
 	Complexity  *string             `json:"complexity,omitempty" bson:"complexity,omitempty"`
+	Date        *time.Time          `json:"date,omitempty" bson:"date,omitempty"`
 	From        *time.Time          `json:"from,omitempty" bson:"from,omitempty"`
 	To          *time.Time          `json:"to,omitempty" bson:"to,omitempty"`
 	Done        *bool               `json:"done,omitempty" bson:"done,omitempty"`

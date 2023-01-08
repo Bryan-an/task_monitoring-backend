@@ -18,6 +18,7 @@ type addInput struct {
 	Labels      *[]string  `json:"labels"`
 	Priority    *string    `json:"priority" binding:"required,oneof=low medium high"`
 	Complexity  *string    `json:"complexity" binding:"required,oneof=low medium high"`
+	Date        *time.Time `json:"date" binding:"required"`
 	From        *time.Time `json:"from"`
 	To          *time.Time `json:"to"`
 	Done        *bool      `json:"done" binding:"required"`
@@ -58,6 +59,7 @@ func (h handler) AddTask(c *gin.Context) {
 		Labels:      input.Labels,
 		Priority:    input.Priority,
 		Complexity:  input.Complexity,
+		Date:        input.Date,
 		From:        input.From,
 		To:          input.To,
 		Done:        input.Done,
