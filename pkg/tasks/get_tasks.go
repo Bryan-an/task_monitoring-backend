@@ -18,6 +18,8 @@ func (h handler) GetTasks(c *gin.Context) {
 	priority := c.Query("priority")
 	complexity := c.Query("complexity")
 	labels := c.Query("labels")
+	done := c.Query("done")
+	remind := c.Query("remind")
 	order := c.DefaultQuery("order", "des")
 
 	uid, err := utils.ExtractTokenID(c)
@@ -60,6 +62,22 @@ func (h handler) GetTasks(c *gin.Context) {
 		filter["labels"] = bson.D{{
 			Key: "$regex", Value: primitive.Regex{Pattern: b.String(), Options: "i"},
 		}}
+	}
+
+	if done != "" {
+		if done == "true" {
+			filter["done"] = true
+		} else if done == "false" {
+			filter["done"] = false
+		}
+	}
+
+	if remind != "" {
+		if remind == "true" {
+			filter["remind"] = true
+		} else if remind == "false" {
+			filter["remind"] = false
+		}
 	}
 
 	var sort int
