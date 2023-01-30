@@ -135,7 +135,6 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 
 			emailNotifications := false
 			mobileNotifications := true
-			security := "something"
 			theme := "light"
 
 			s := models.Settings{
@@ -144,7 +143,6 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 					Email:  &emailNotifications,
 					Mobile: &mobileNotifications,
 				},
-				Security:  &security,
 				Theme:     &theme,
 				CreatedAt: &now,
 				UpdatedAt: &now,
