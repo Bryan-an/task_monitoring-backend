@@ -15,7 +15,6 @@ import (
 
 type replaceInput struct {
 	Notifications *notification `json:"notifications" binding:"required"`
-	Security      *string       `json:"security" binding:"required"`
 	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
 }
 
@@ -52,7 +51,6 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 			Key: "$set",
 			Value: bson.D{
 				{Key: "notifications", Value: input.Notifications},
-				{Key: "security", Value: input.Security},
 				{Key: "theme", Value: input.Theme},
 				{Key: "updated_at", Value: time.Now()},
 			},

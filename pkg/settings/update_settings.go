@@ -20,7 +20,6 @@ type notifications struct {
 
 type UpdateInput struct {
 	Notifications *notifications `json:"notifications"`
-	Security      *string        `json:"security"`
 	Theme         *string        `json:"theme"`
 }
 
@@ -64,10 +63,6 @@ func (h handler) UpdateSettings(c *gin.Context) {
 		if input.Notifications.Mobile != nil {
 			data["notifications.mobile"] = input.Notifications.Mobile
 		}
-	}
-
-	if input.Security != nil {
-		data["security"] = input.Security
 	}
 
 	if input.Theme != nil {

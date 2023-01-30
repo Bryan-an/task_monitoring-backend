@@ -116,7 +116,6 @@ func (h handler) Register(c *gin.Context) {
 	userId := req.InsertedID.(primitive.ObjectID).Hex()
 	emailNotifications := false
 	mobileNotifications := true
-	security := "something"
 	theme := "light"
 
 	s := models.Settings{
@@ -125,7 +124,6 @@ func (h handler) Register(c *gin.Context) {
 			Email:  &emailNotifications,
 			Mobile: &mobileNotifications,
 		},
-		Security:  &security,
 		Theme:     &theme,
 		CreatedAt: &now,
 		UpdatedAt: &now,

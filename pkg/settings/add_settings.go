@@ -19,7 +19,6 @@ type notification struct {
 
 type addInput struct {
 	Notifications *notification `json:"notifications" binding:"required"`
-	Security      *string       `json:"security" binding:"required"`
 	Theme         *string       `json:"theme" binding:"required,oneof=dark light"`
 }
 
@@ -56,7 +55,6 @@ func (h handler) AddSettings(c *gin.Context) {
 			Email:  input.Notifications.Email,
 			Mobile: input.Notifications.Mobile,
 		},
-		Security:  input.Security,
 		Theme:     input.Theme,
 		CreatedAt: &now,
 		UpdatedAt: &now,
