@@ -105,6 +105,8 @@ func (h handler) Register(c *gin.Context) {
 		UpdatedAt: &now,
 	}
 
+	// wc := writeconcern.WMajority();
+
 	req, err := usersCollection.InsertOne(context.TODO(), u)
 
 	if err != nil {

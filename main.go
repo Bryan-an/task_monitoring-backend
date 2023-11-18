@@ -19,22 +19,20 @@ import (
 )
 
 var database *mongo.Database
+var client *mongo.Client
 
 func main() {
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Fatal("Error loading .env file")
-		return
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file", err)
 	}
 
-	client := db.Connect()
+	client = db.Connect()
 	DbName := os.Getenv("DB_NAME")
 	database = client.Database(DbName)
 
 	defer func() {
-		if err = client.Disconnect(context.TODO()); err != nil {
-			panic(err)
+		if err := client.Disconnect(context.TODO()); err != nil {
+			log.Fatal(err)
 		}
 	}()
 
@@ -59,10 +57,10 @@ func setupRouter() *gin.Engine {
 		c.String(http.StatusOK, "pong")
 	})
 
-	auth.RegisterRoutes(router, database)
-	settings.RegisterRoutes(router, database)
-	tasks.RegisterRoutes(router, database)
-	users.RegisterRoutes(router, database)
+	auth.RegisterRoutes(router, database, client)
+	settings.RegisterRoutes(router, database, client)
+	tasks.RegisterRoutes(router, database, client)
+	users.RegisterRoutes(router, database, client)
 
 	return router
 }
