@@ -17,7 +17,6 @@ func (h handler) GetSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -28,7 +27,7 @@ func (h handler) GetSettings(c *gin.Context) {
 	if err = settingsCollection.FindOne(context.TODO(), filter).Decode(&settings); err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-				"error": fmt.Sprintf("settings not found for user with id '%s'", uid),
+				"error": fmt.Sprintf("settings not found for user with id '%s'", uid.Hex()),
 			})
 
 			return

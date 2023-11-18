@@ -37,7 +37,6 @@ func (h handler) AddSettings(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -64,7 +63,6 @@ func (h handler) AddSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
