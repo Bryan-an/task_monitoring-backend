@@ -97,7 +97,7 @@ func (h handler) HandleFacebookLogin(c *gin.Context) {
 		return
 	}
 
-	authToken, err := SignInUser(details, h.DB)
+	authToken, err := SignInUser(details, h.DB, h.Client)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
@@ -133,7 +133,7 @@ func (h handler) LoginWithFacebookMobile(c *gin.Context) {
 		return
 	}
 
-	authToken, err := SignInUser(details, h.DB)
+	authToken, err := SignInUser(details, h.DB, h.Client)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
