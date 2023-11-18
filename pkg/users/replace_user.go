@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type replaceInput struct {
@@ -23,15 +22,6 @@ func (h handler) ReplaceUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	id, err := primitive.ObjectIDFromHex(uid)
-
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -54,7 +44,7 @@ func (h handler) ReplaceUser(c *gin.Context) {
 	coll := h.DB.Collection("users")
 
 	filter := bson.D{
-		{Key: "_id", Value: id},
+		{Key: "_id", Value: uid},
 		{Key: "status", Value: "active"},
 	}
 

@@ -30,7 +30,6 @@ func (h handler) AddTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -54,7 +53,7 @@ func (h handler) AddTask(c *gin.Context) {
 	now := time.Now()
 
 	t := models.Task{
-		UserId:      &uid,
+		UserId:      uid,
 		Title:       input.Title,
 		Description: input.Description,
 		Labels:      input.Labels,

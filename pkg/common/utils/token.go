@@ -10,6 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GenerateToken(userId string) (string, error) {
@@ -55,7 +57,7 @@ func ExtractToken(c *gin.Context) string {
 	return ""
 }
 
-func ExtractTokenID(c *gin.Context) (string, error) {
+func ExtractTokenID(c *gin.Context) (*primitive.ObjectID, error) {
 	tokenString := ExtractToken(c)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -66,7 +68,7 @@ func ExtractTokenID(c *gin.Context) (string, error) {
 	})
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
@@ -74,10 +76,16 @@ func ExtractTokenID(c *gin.Context) (string, error) {
 	if ok && token.Valid {
 		uid := fmt.Sprintf("%v", claims["user_id"])
 
-		return uid, nil
+		objId, err := primitive.ObjectIDFromHex(uid)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return &objId, nil
 	}
 
-	return "", nil
+	return nil, errors.New("invalid token")
 }
 
 func GetOTPToken(length int) (string, error) {

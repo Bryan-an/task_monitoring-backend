@@ -13,7 +13,7 @@ type Notification struct {
 
 type Settings struct {
 	Id            *primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	UserId        *string             `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	UserId        *primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
 	Notifications *Notification       `json:"notifications,omitempty" bson:"notifications,omitempty"`
 	Theme         *string             `json:"theme,omitempty" bson:"theme,omitempty"`
 	CreatedAt     *time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`

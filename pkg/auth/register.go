@@ -100,7 +100,7 @@ func (h handler) Register(c *gin.Context) {
 				return uResult, err
 			}
 
-			userId := uResult.InsertedID.(primitive.ObjectID).Hex()
+			userId := uResult.InsertedID.(primitive.ObjectID)
 			emailNotifications := false
 			mobileNotifications := true
 			theme := "light"

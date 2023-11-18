@@ -9,7 +9,6 @@ import (
 	"github.com/Bryan-an/tasker-backend/pkg/common/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -23,20 +22,12 @@ func (h handler) GetUser(c *gin.Context) {
 		return
 	}
 
-	id, err := primitive.ObjectIDFromHex(uid)
-
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-
-		return
-	}
-
 	coll := h.DB.Collection("users")
 	var user models.User
 	opts := options.FindOne().SetProjection(bson.D{{Key: "password", Value: 0}})
 
 	filter := bson.D{
-		{Key: "_id", Value: id},
+		{Key: "_id", Value: uid},
 		{Key: "status", Value: "active"},
 	}
 

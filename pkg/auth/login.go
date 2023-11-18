@@ -131,7 +131,7 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 				return "", errors.New("error occurred while registering user")
 			}
 
-			uid := req.InsertedID.(primitive.ObjectID).Hex()
+			uid := req.InsertedID.(primitive.ObjectID)
 
 			emailNotifications := false
 			mobileNotifications := true
@@ -154,7 +154,7 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 				return "", errors.New("error occurred while registering user")
 			}
 
-			token, tokenErr = utils.GenerateToken(uid)
+			token, tokenErr = utils.GenerateToken(uid.Hex())
 		} else {
 			return "", errors.New("error occurred while logging in user")
 		}
