@@ -3,7 +3,9 @@ package tasks
 import (
 	"bytes"
 	"context"
+	"math"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Bryan-an/tasker-backend/pkg/common/models"
@@ -21,12 +23,66 @@ func (h handler) GetTasks(c *gin.Context) {
 	done := c.Query("done")
 	remind := c.Query("remind")
 	order := c.DefaultQuery("order", "des")
+	pageParam := c.Query("page")
+	pageSizeParam := c.Query("page_size")
+
+	queryParamsErrors := []utils.ErrorMsg{}
+
+	if pageParam == "" {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page",
+			Message: "this query param is required",
+		})
+	}
+
+	page, err := strconv.Atoi(pageParam)
+
+	if err != nil {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page",
+			Message: "this query param must be a number",
+		})
+	}
+
+	if page < 1 {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page",
+			Message: "this query param must be greater than 0",
+		})
+	}
+
+	if pageSizeParam == "" {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page_size",
+			Message: "this query param is required",
+		})
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeParam)
+
+	if err != nil {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page_size",
+			Message: "this query param must be a number",
+		})
+	}
+
+	if pageSize < 1 {
+		queryParamsErrors = append(queryParamsErrors, utils.ErrorMsg{
+			Field:   "page_size",
+			Message: "this query param must be greater than 0",
+		})
+	}
+
+	if len(queryParamsErrors) > 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": queryParamsErrors})
+		return
+	}
 
 	uid, err := utils.ExtractTokenID(c)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -88,19 +144,20 @@ func (h handler) GetTasks(c *gin.Context) {
 		sort = -1
 	}
 
-	opts := options.Find().SetSort(bson.D{{Key: "updated_at", Value: sort}})
+	opts := options.Find().
+		SetSort(bson.D{{Key: "updated_at", Value: sort}}).
+		SetLimit(int64(pageSize)).
+		SetSkip(int64((page - 1) * pageSize))
 
 	cursor, err := taskCollection.Find(context.TODO(), filter, opts)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
 	if err = cursor.All(context.TODO(), &tasks); err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -108,5 +165,41 @@ func (h handler) GetTasks(c *gin.Context) {
 		tasks = []models.Task{}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"tasks": tasks, "count": len(tasks)})
+	totalRecords, err := taskCollection.CountDocuments(context.TODO(), filter)
+
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+	}
+
+	totalPages := int(math.Ceil(float64(totalRecords) / float64(pageSize)))
+
+	var nextPage *int
+	var prevPage *int
+
+	if page < totalPages {
+		p := page + 1
+		nextPage = &p
+	} else {
+		nextPage = nil
+	}
+
+	if page > 1 && page <= totalPages {
+		p := page - 1
+		prevPage = &p
+	} else {
+		prevPage = nil
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tasks": tasks,
+		"pagination": gin.H{
+			"count":         len(tasks),
+			"page":          page,
+			"page_size":     pageSize,
+			"total_records": totalRecords,
+			"total_pages":   totalPages,
+			"next_page":     nextPage,
+			"prev_page":     prevPage,
+		},
+	})
 }
