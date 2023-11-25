@@ -14,7 +14,7 @@ import (
 )
 
 type updateInput struct {
-	Name *string `json:"name"`
+	Name utils.JSONString `json:"name"`
 }
 
 func (h handler) UpdateUser(c *gin.Context) {
@@ -32,7 +32,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -52,8 +51,12 @@ func (h handler) UpdateUser(c *gin.Context) {
 		"updated_at": time.Now(),
 	}
 
-	if input.Name != nil {
-		data["name"] = input.Name
+	if input.Name.Set {
+		if input.Name.Valid {
+			data["name"] = input.Name.Value
+		} else {
+			data["name"] = nil
+		}
 	}
 
 	update := bson.D{
@@ -67,7 +70,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
