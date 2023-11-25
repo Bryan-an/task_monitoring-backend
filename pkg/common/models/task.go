@@ -8,7 +8,7 @@ import (
 
 type Task struct {
 	Id          *primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
-	UserId      *string             `json:"user_id,omitempty" bson:"user_id,omitempty"`
+	UserId      *primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
 	Title       *string             `json:"title,omitempty" bson:"title,omitempty"`
 	Description *string             `json:"description,omitempty" bson:"description,omitempty"`
 	Labels      *[]string           `json:"labels,omitempty" bson:"labels,omitempty"`

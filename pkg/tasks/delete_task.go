@@ -18,7 +18,6 @@ func (h handler) DeleteTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -26,7 +25,6 @@ func (h handler) DeleteTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -52,7 +50,6 @@ func (h handler) DeleteTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 

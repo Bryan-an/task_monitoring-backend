@@ -27,7 +27,6 @@ func (h handler) AddSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -38,7 +37,6 @@ func (h handler) AddSettings(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -50,7 +48,7 @@ func (h handler) AddSettings(c *gin.Context) {
 	now := time.Now()
 
 	s := models.Settings{
-		UserId: &uid,
+		UserId: uid,
 		Notifications: &models.Notification{
 			Email:  input.Notifications.Email,
 			Mobile: input.Notifications.Mobile,
@@ -65,7 +63,6 @@ func (h handler) AddSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 

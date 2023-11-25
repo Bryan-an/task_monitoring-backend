@@ -10,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 type resendCodeInput struct {
@@ -24,7 +27,6 @@ func (h handler) ResendCode(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -33,31 +35,51 @@ func (h handler) ResendCode(c *gin.Context) {
 		return
 	}
 
-	coll := h.DB.Collection("verifications")
-	verificationsFilter := bson.D{{Key: "email", Value: input.Email}}
-	result, err := coll.DeleteOne(context.TODO(), verificationsFilter)
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+	session, err := h.Client.StartSession()
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	if result.DeletedCount == 0 {
-		c.AbortWithStatusJSON(http.StatusInternalServerError,
-			gin.H{"error": "unable to replace email verification code"})
+	defer session.EndSession(context.TODO())
 
-		return
-	}
+	_, err = session.WithTransaction(
+		context.TODO(),
+		func(ctx mongo.SessionContext) (interface{}, error) {
+			coll := h.DB.Collection("verifications")
+			verificationsFilter := bson.D{{Key: "email", Value: input.Email}}
+			result, err := coll.DeleteOne(ctx, verificationsFilter)
 
-	u := models.User{
-		Email: input.Email,
-	}
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return nil, err
+			}
 
-	err = SendVerificationEmail(h, c, u)
+			if result.DeletedCount == 0 {
+				c.AbortWithStatusJSON(http.StatusInternalServerError,
+					gin.H{"error": "unable to replace email verification code"})
+
+				return nil, errors.New("unable to replace email verification code")
+			}
+
+			u := models.User{
+				Email: input.Email,
+			}
+
+			err = SendVerificationEmail(h, c, u, ctx)
+
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return nil, err
+			}
+
+			return nil, nil
+		}, txnOptions)
 
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 

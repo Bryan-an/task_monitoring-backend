@@ -7,12 +7,14 @@ import (
 )
 
 type handler struct {
-	DB *mongo.Database
+	DB     *mongo.Database
+	Client *mongo.Client
 }
 
-func RegisterRoutes(r *gin.Engine, db *mongo.Database) {
+func RegisterRoutes(r *gin.Engine, db *mongo.Database, client *mongo.Client) {
 	h := &handler{
-		DB: db,
+		DB:     db,
+		Client: client,
 	}
 
 	routes := r.Group("/api/v1/tasks")

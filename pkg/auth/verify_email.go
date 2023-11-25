@@ -13,6 +13,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 func (h handler) VerifyEmail(c *gin.Context) {
@@ -23,7 +25,6 @@ func (h handler) VerifyEmail(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -35,13 +36,12 @@ func (h handler) VerifyEmail(c *gin.Context) {
 	verificationsColl := h.DB.Collection("verifications")
 	verificationsFilter := bson.D{{Key: "email", Value: data.Email}}
 	var actualData models.VerificationData
+	const verificationNotFoundMessage = "verification code not found for user with email '%s'"
 
 	if err := verificationsColl.FindOne(context.TODO(), verificationsFilter).Decode(&actualData); err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-				"error": fmt.Sprintf(
-					"verification code not found for user with email '%s'",
-					*data.Email),
+				"error": fmt.Sprintf(verificationNotFoundMessage, *data.Email),
 			})
 
 			return
@@ -58,49 +58,71 @@ func (h handler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	usersColl := h.DB.Collection("users")
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+	session, err := h.Client.StartSession()
 
-	usersFilter := bson.D{
-		{Key: "email", Value: data.Email},
-		{Key: "status", Value: "created"},
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
-	update := bson.D{
-		{
-			Key: "$set",
-			Value: bson.D{
-				{Key: "status", Value: "active"},
-			},
+	defer session.EndSession(context.TODO())
+
+	_, err = session.WithTransaction(
+		context.TODO(),
+		func(ctx mongo.SessionContext) (interface{}, error) {
+			usersColl := h.DB.Collection("users")
+
+			usersFilter := bson.D{
+				{Key: "email", Value: data.Email},
+				{Key: "status", Value: "created"},
+			}
+
+			update := bson.D{
+				{
+					Key: "$set",
+					Value: bson.D{
+						{Key: "status", Value: "active"},
+					},
+				},
+			}
+
+			result, err := usersColl.UpdateOne(ctx, usersFilter, update)
+
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return nil, err
+			}
+
+			if result.MatchedCount == 0 {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+					"error": fmt.Sprintf("user not found with email '%s'", *data.Email),
+				})
+
+				return nil, fmt.Errorf("user not found with email '%s'", *data.Email)
+			}
+
+			verificationsResult, err := verificationsColl.DeleteOne(ctx, verificationsFilter)
+
+			if err != nil {
+				c.AbortWithError(http.StatusInternalServerError, err)
+				return nil, err
+			}
+
+			if verificationsResult.DeletedCount == 0 {
+				c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
+					"error": fmt.Sprintf(verificationNotFoundMessage, *data.Email),
+				})
+
+				return nil, fmt.Errorf(verificationNotFoundMessage, *data.Email)
+			}
+
+			return nil, nil
 		},
-	}
-
-	result, err := usersColl.UpdateOne(context.TODO(), usersFilter, update)
+		txnOptions)
 
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	if result.MatchedCount == 0 {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("user not found with email '%s'", *data.Email),
-		})
-
-		return
-	}
-
-	verificationsResult, err := verificationsColl.DeleteOne(context.TODO(), verificationsFilter)
-
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	if verificationsResult.DeletedCount == 0 {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("verification code not found for user with email '%s'", *data.Email),
-		})
-
 		return
 	}
 

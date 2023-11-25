@@ -13,6 +13,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -29,7 +31,6 @@ func (h handler) Login(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -57,7 +58,6 @@ func (h handler) Login(c *gin.Context) {
 		}
 
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -73,7 +73,6 @@ func (h handler) Login(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -82,11 +81,10 @@ func (h handler) Login(c *gin.Context) {
 
 func verifyPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-
 	return err == nil
 }
 
-func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) {
+func SignInUser(details models.UserDetails, db *mongo.Database, client *mongo.Client) (string, error) {
 	if details == (models.UserDetails{}) {
 		return "", errors.New("user details can't be empty")
 	}
@@ -112,49 +110,66 @@ func SignInUser(details models.UserDetails, db *mongo.Database) (string, error) 
 
 	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err != nil {
 		if err == mongo.ErrNoDocuments {
-			role := "user"
-			status := "active"
-			now := time.Now()
-
-			u := models.User{
-				Name:      &details.Name,
-				Email:     &details.Email,
-				Role:      &role,
-				Status:    &status,
-				CreatedAt: &now,
-				UpdatedAt: &now,
-			}
-
-			req, err := usersCollection.InsertOne(context.TODO(), u)
+			wc := writeconcern.Majority()
+			txnOptions := options.Transaction().SetWriteConcern(wc)
+			session, err := client.StartSession()
 
 			if err != nil {
-				return "", errors.New("error occurred while registering user")
+				return "", err
 			}
 
-			uid := req.InsertedID.(primitive.ObjectID).Hex()
+			defer session.EndSession(context.TODO())
 
-			emailNotifications := false
-			mobileNotifications := true
-			theme := "light"
+			_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
+				role := "user"
+				status := "active"
+				now := time.Now()
 
-			s := models.Settings{
-				UserId: &uid,
-				Notifications: &models.Notification{
-					Email:  &emailNotifications,
-					Mobile: &mobileNotifications,
-				},
-				Theme:     &theme,
-				CreatedAt: &now,
-				UpdatedAt: &now,
+				u := models.User{
+					Name:      &details.Name,
+					Email:     &details.Email,
+					Role:      &role,
+					Status:    &status,
+					CreatedAt: &now,
+					UpdatedAt: &now,
+				}
+
+				req, err := usersCollection.InsertOne(ctx, u)
+
+				if err != nil {
+					return "", errors.New("error occurred while registering user")
+				}
+
+				uid := req.InsertedID.(primitive.ObjectID)
+
+				emailNotifications := false
+				mobileNotifications := true
+				theme := "light"
+
+				s := models.Settings{
+					UserId: &uid,
+					Notifications: &models.Notification{
+						Email:  &emailNotifications,
+						Mobile: &mobileNotifications,
+					},
+					Theme:     &theme,
+					CreatedAt: &now,
+					UpdatedAt: &now,
+				}
+
+				settingsCollection := db.Collection("settings")
+
+				if _, err = settingsCollection.InsertOne(ctx, s); err != nil {
+					return "", errors.New("error occurred while registering user")
+				}
+
+				token, tokenErr = utils.GenerateToken(uid.Hex())
+				return "", nil
+			}, txnOptions)
+
+			if err != nil {
+				return "", err
 			}
-
-			settingsCollection := db.Collection("settings")
-
-			if _, err = settingsCollection.InsertOne(context.TODO(), s); err != nil {
-				return "", errors.New("error occurred while registering user")
-			}
-
-			token, tokenErr = utils.GenerateToken(uid)
 		} else {
 			return "", errors.New("error occurred while logging in user")
 		}

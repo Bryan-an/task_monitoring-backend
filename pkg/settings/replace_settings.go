@@ -23,7 +23,6 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -34,7 +33,6 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -61,13 +59,15 @@ func (h handler) ReplaceSettings(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
 	if result.MatchedCount == 0 {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("settings not found for user with id '%s'", uid),
+			"error": fmt.Sprintf(
+				"settings not found for user with id '%s'",
+				uid.Hex(),
+			),
 		})
 
 		return

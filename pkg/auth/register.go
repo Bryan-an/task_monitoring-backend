@@ -18,6 +18,9 @@ import (
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 type registerInput struct {
@@ -34,7 +37,6 @@ func (h handler) Register(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -43,37 +45,9 @@ func (h handler) Register(c *gin.Context) {
 		return
 	}
 
-	usersCollection := h.DB.Collection("users")
-
-	filter := bson.D{
-		{Key: "email", Value: input.Email},
-		{Key: "status", Value: "active"},
-	}
-
-	var user models.User
-
-	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "this email address is already in use",
-		})
-
-		return
-	}
-
-	minEntropy, err := strconv.ParseFloat(os.Getenv("MIN_ENTROPY_BITS"), 64)
+	err := validateUser(h, c, input)
 
 	if err != nil {
-		minEntropy = 50
-	}
-
-	if err := passwordvalidator.Validate(*input.Password, minEntropy); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": []utils.ErrorMsg{
-			{
-				Field:   "Password",
-				Message: err.Error(),
-			},
-		}})
-
 		return
 	}
 
@@ -85,7 +59,6 @@ func (h handler) Register(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -105,53 +78,110 @@ func (h handler) Register(c *gin.Context) {
 		UpdatedAt: &now,
 	}
 
-	req, err := usersCollection.InsertOne(context.TODO(), u)
+	usersCollection := h.DB.Collection("users")
+
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+	session, err := h.Client.StartSession()
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
-	userId := req.InsertedID.(primitive.ObjectID).Hex()
-	emailNotifications := false
-	mobileNotifications := true
-	theme := "light"
+	defer session.EndSession(context.TODO())
 
-	s := models.Settings{
-		UserId: &userId,
-		Notifications: &models.Notification{
-			Email:  &emailNotifications,
-			Mobile: &mobileNotifications,
-		},
-		Theme:     &theme,
-		CreatedAt: &now,
-		UpdatedAt: &now,
-	}
+	result, err := session.WithTransaction(
+		context.TODO(),
+		func(ctx mongo.SessionContext) (interface{}, error) {
+			uResult, err := usersCollection.InsertOne(ctx, u)
 
-	settingsCollection := h.DB.Collection("settings")
+			if err != nil {
+				return uResult, err
+			}
 
-	if _, err = settingsCollection.InsertOne(context.TODO(), s); err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+			userId := uResult.InsertedID.(primitive.ObjectID)
+			emailNotifications := false
+			mobileNotifications := true
+			theme := "light"
+			now := time.Now()
 
-		return
-	}
+			s := models.Settings{
+				UserId: &userId,
+				Notifications: &models.Notification{
+					Email:  &emailNotifications,
+					Mobile: &mobileNotifications,
+				},
+				Theme:     &theme,
+				CreatedAt: &now,
+				UpdatedAt: &now,
+			}
 
-	err = SendVerificationEmail(h, c, u)
+			settingsCollection := h.DB.Collection("settings")
+
+			if result, err := settingsCollection.InsertOne(ctx, s); err != nil {
+				return result, err
+			}
+
+			err = SendVerificationEmail(h, c, u, ctx)
+
+			if err != nil {
+				return nil, err
+			}
+
+			return uResult, nil
+		}, txnOptions)
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "please check your email for email verification code",
-		"id":      req.InsertedID,
+		"id":      result.(*mongo.InsertOneResult).InsertedID,
 	})
 }
 
-func SendVerificationEmail(h handler, c *gin.Context, user models.User) error {
+func validateUser(h handler, c *gin.Context, input registerInput) error {
+	usersCollection := h.DB.Collection("users")
+
+	filter := bson.D{
+		{Key: "email", Value: input.Email},
+		{Key: "status", Value: "active"},
+	}
+
+	var user models.User
+
+	if err := usersCollection.FindOne(context.TODO(), filter).Decode(&user); err == nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "this email address is already in use",
+		})
+
+		return errors.New("this email address is already in use")
+	}
+
+	minEntropy, err := strconv.ParseFloat(os.Getenv("MIN_ENTROPY_BITS"), 64)
+
+	if err != nil {
+		minEntropy = 50
+	}
+
+	if err := passwordvalidator.Validate(*input.Password, minEntropy); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": []utils.ErrorMsg{
+			{
+				Field:   "Password",
+				Message: err.Error(),
+			},
+		}})
+
+		return err
+	}
+
+	return nil
+}
+
+func SendVerificationEmail(h handler, c *gin.Context, user models.User, msc mongo.SessionContext) error {
 	m := gomail.NewMessage()
 	from := os.Getenv("SENDER_EMAIL")
 	to := *user.Email
@@ -191,7 +221,7 @@ func SendVerificationEmail(h handler, c *gin.Context, user models.User) error {
 
 	coll := h.DB.Collection("verifications")
 
-	if _, err = coll.InsertOne(context.TODO(), data); err != nil {
+	if _, err = coll.InsertOne(msc, data); err != nil {
 		return err
 	}
 

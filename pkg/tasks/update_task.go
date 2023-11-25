@@ -15,16 +15,16 @@ import (
 )
 
 type updateInput struct {
-	Title       *string    `json:"title"`
-	Description *string    `json:"description"`
-	Labels      *[]string  `json:"labels"`
-	Priority    *string    `json:"priority"`
-	Complexity  *string    `json:"complexity"`
-	Date        *time.Time `json:"date"`
-	From        *time.Time `json:"from"`
-	To          *time.Time `json:"to"`
-	Done        *bool      `json:"done"`
-	Remind      *bool      `json:"remind"`
+	Title       utils.JSONString      `json:"title"`
+	Description utils.JSONString      `json:"description"`
+	Labels      utils.JSONStringSlice `json:"labels"`
+	Priority    utils.JSONString      `json:"priority"`
+	Complexity  utils.JSONString      `json:"complexity"`
+	Date        utils.JSONTime        `json:"date"`
+	From        utils.JSONTime        `json:"from"`
+	To          utils.JSONTime        `json:"to"`
+	Done        utils.JSONBool        `json:"done"`
+	Remind      utils.JSONBool        `json:"remind"`
 }
 
 func (h handler) UpdateTask(c *gin.Context) {
@@ -33,7 +33,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -41,7 +40,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -52,7 +50,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -73,44 +70,84 @@ func (h handler) UpdateTask(c *gin.Context) {
 		"updated_at": time.Now(),
 	}
 
-	if input.Title != nil {
-		data["title"] = input.Title
+	if input.Title.Set {
+		if input.Title.Valid {
+			data["title"] = input.Title.Value
+		} else {
+			data["title"] = nil
+		}
 	}
 
-	if input.Description != nil {
-		data["description"] = input.Description
+	if input.Description.Set {
+		if input.Description.Valid {
+			data["description"] = input.Description.Value
+		} else {
+			data["description"] = nil
+		}
 	}
 
-	if input.Labels != nil {
-		data["labels"] = input.Labels
+	if input.Labels.Set {
+		if input.Labels.Valid {
+			data["labels"] = input.Labels.Value
+		} else {
+			data["labels"] = nil
+		}
 	}
 
-	if input.Priority != nil {
-		data["priority"] = input.Priority
+	if input.Priority.Set {
+		if input.Priority.Valid {
+			data["priority"] = input.Priority.Value
+		} else {
+			data["priority"] = nil
+		}
 	}
 
-	if input.Complexity != nil {
-		data["complexity"] = input.Complexity
+	if input.Complexity.Set {
+		if input.Complexity.Valid {
+			data["complexity"] = input.Complexity.Value
+		} else {
+			data["complexity"] = nil
+		}
 	}
 
-	if input.Date != nil {
-		data["date"] = input.Date
+	if input.Date.Set {
+		if input.Date.Valid {
+			data["date"] = input.Date.Value
+		} else {
+			data["date"] = nil
+		}
 	}
 
-	if input.From != nil {
-		data["from"] = input.From
+	if input.From.Set {
+		if input.From.Valid {
+			data["from"] = input.From.Value
+		} else {
+			data["from"] = nil
+		}
 	}
 
-	if input.To != nil {
-		data["to"] = input.To
+	if input.To.Set {
+		if input.To.Valid {
+			data["to"] = input.To.Value
+		} else {
+			data["to"] = nil
+		}
 	}
 
-	if input.Done != nil {
-		data["done"] = input.Done
+	if input.Done.Set {
+		if input.Done.Valid {
+			data["done"] = input.Done.Value
+		} else {
+			data["done"] = nil
+		}
 	}
 
-	if input.Remind != nil {
-		data["remind"] = input.Remind
+	if input.Remind.Set {
+		if input.Remind.Valid {
+			data["remind"] = input.Remind.Value
+		} else {
+			data["remind"] = nil
+		}
 	}
 
 	update := bson.D{
@@ -124,7 +161,6 @@ func (h handler) UpdateTask(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 

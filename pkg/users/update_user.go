@@ -11,11 +11,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type updateInput struct {
-	Name *string `json:"name"`
+	Name utils.JSONString `json:"name"`
 }
 
 func (h handler) UpdateUser(c *gin.Context) {
@@ -23,15 +22,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
-		return
-	}
-
-	id, err := primitive.ObjectIDFromHex(uid)
-
-	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
@@ -42,7 +32,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 
 		if errors.As(err, &ve) {
 			out := utils.FillErrors(ve)
-
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"errors": out})
 		} else {
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -54,7 +43,7 @@ func (h handler) UpdateUser(c *gin.Context) {
 	coll := h.DB.Collection("users")
 
 	filter := bson.D{
-		{Key: "_id", Value: id},
+		{Key: "_id", Value: uid},
 		{Key: "status", Value: "active"},
 	}
 
@@ -62,8 +51,12 @@ func (h handler) UpdateUser(c *gin.Context) {
 		"updated_at": time.Now(),
 	}
 
-	if input.Name != nil {
-		data["name"] = input.Name
+	if input.Name.Set {
+		if input.Name.Valid {
+			data["name"] = input.Name.Value
+		} else {
+			data["name"] = nil
+		}
 	}
 
 	update := bson.D{
@@ -77,7 +70,6 @@ func (h handler) UpdateUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
