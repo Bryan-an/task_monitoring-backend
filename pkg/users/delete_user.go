@@ -40,7 +40,6 @@ func (h handler) DeleteUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
