@@ -2,6 +2,7 @@ package settings
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,14 +14,39 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type JSONNotifications struct {
+	Value notifications
+	Valid bool
+	Set   bool
+}
+
 type notifications struct {
-	Email  *bool `json:"email"`
-	Mobile *bool `json:"mobile"`
+	Email  utils.JSONBool `json:"email"`
+	Mobile utils.JSONBool `json:"mobile"`
 }
 
 type UpdateInput struct {
-	Notifications *notifications `json:"notifications"`
-	Theme         *string        `json:"theme"`
+	Notifications JSONNotifications `json:"notifications"`
+	Theme         utils.JSONString  `json:"theme"`
+}
+
+func (n *JSONNotifications) UnmarshalJSON(data []byte) error {
+	n.Set = true
+
+	if string(data) == "null" {
+		n.Valid = false
+		return nil
+	}
+
+	var temp notifications
+
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	n.Value = temp
+	n.Valid = true
+	return nil
 }
 
 func (h handler) UpdateSettings(c *gin.Context) {
@@ -53,18 +79,34 @@ func (h handler) UpdateSettings(c *gin.Context) {
 		"updated_at": time.Now(),
 	}
 
-	if input.Notifications != nil {
-		if input.Notifications.Email != nil {
-			data["notifications.email"] = input.Notifications.Email
-		}
+	if input.Notifications.Set {
+		if input.Notifications.Valid {
+			if input.Notifications.Value.Email.Set {
+				if input.Notifications.Value.Email.Valid {
+					data["notifications.email"] = input.Notifications.Value.Email.Value
+				} else {
+					data["notifications.email"] = nil
+				}
+			}
 
-		if input.Notifications.Mobile != nil {
-			data["notifications.mobile"] = input.Notifications.Mobile
+			if input.Notifications.Value.Mobile.Set {
+				if input.Notifications.Value.Mobile.Valid {
+					data["notifications.mobile"] = input.Notifications.Value.Mobile.Value
+				} else {
+					data["notifications.mobile"] = nil
+				}
+			}
+		} else {
+			data["notifications"] = nil
 		}
 	}
 
-	if input.Theme != nil {
-		data["theme"] = input.Theme
+	if input.Theme.Set {
+		if input.Theme.Valid {
+			data["theme"] = input.Theme.Value
+		} else {
+			data["theme"] = nil
+		}
 	}
 
 	update := bson.D{
