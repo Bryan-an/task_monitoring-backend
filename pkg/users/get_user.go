@@ -18,7 +18,6 @@ func (h handler) GetUser(c *gin.Context) {
 
 	if err != nil {
 		c.AbortWithError(http.StatusInternalServerError, err)
-
 		return
 	}
 
