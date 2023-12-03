@@ -191,7 +191,7 @@ func (h handler) GetTasks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"tasks": tasks,
+		"data": tasks,
 		"pagination": gin.H{
 			"count":         len(tasks),
 			"page":          page,

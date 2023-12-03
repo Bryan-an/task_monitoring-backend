@@ -38,5 +38,5 @@ func (h handler) GetSettings(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"settings": settings})
+	c.JSON(http.StatusOK, gin.H{"data": settings})
 }
