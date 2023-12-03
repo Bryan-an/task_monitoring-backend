@@ -51,5 +51,5 @@ func (h handler) GetTask(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"task": task})
+	c.JSON(http.StatusOK, gin.H{"data": task})
 }
