@@ -21,6 +21,7 @@ func RegisterRoutes(r *gin.Engine, db *mongo.Database, client *mongo.Client) {
 
 	routes.Use(middlewares.JwtAuthMiddleware())
 	routes.GET("/", h.GetTasks)
+	routes.GET("/today", h.GetTasksForToday)
 	routes.POST("/", h.AddTask)
 	routes.GET("/:id", h.GetTask)
 	routes.PUT("/:id", h.ReplaceTask)
