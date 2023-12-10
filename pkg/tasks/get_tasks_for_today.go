@@ -24,15 +24,18 @@ func (h handler) GetTasksForToday(c *gin.Context) {
 	tasksCollection := h.DB.Collection("tasks")
 	var tasks []models.Task
 
+	from := time.Now()
+	to := time.Now().Add(24 * time.Hour)
+
 	filter := bson.M{
 		"user_id": uid,
 		"status":  "created",
 		"date": bson.M{
 			"$gte": primitive.NewDateTimeFromTime(
-				time.Now().UTC().Truncate(24 * time.Hour),
+				time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location()).UTC(),
 			),
 			"$lt": primitive.NewDateTimeFromTime(
-				time.Now().UTC().Add(24 * time.Hour).Truncate(24 * time.Hour),
+				time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, to.Location()).UTC(),
 			),
 		},
 	}
